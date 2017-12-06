@@ -12,6 +12,9 @@ import com.derekudacityclassprojects.jokelib.JavaJoke;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 /**
  * Created by Derek on 12/5/2017.
  */
@@ -19,6 +22,8 @@ import com.google.android.gms.ads.AdView;
 public class MainActivityFragment extends Fragment {
     private final int REQUEST_CODE_DISPLAY_JOKE_ACITVITY = 7;
     private Button getJokeButton;
+    private JavaJoke jokes;
+    private MainActivityFragmentPresenter presenter;
     public MainActivityFragment() {
     }
 
@@ -26,14 +31,17 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_main, container, false);
+        // get jokes from database
+        jokes = new JavaJoke(null);
 
+        presenter = new MainActivityFragmentPresenter();
 
         getJokeButton = root.findViewById(R.id.get_a_joke_button);
         getJokeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(getActivity(), DisplayJokeActivity.class);
-                String[] joke = JavaJoke.getJoke();
+                String[] joke = jokes.getJoke();
                 intent.putExtra(DisplayJokeActivity.EXTRA_JOKE, joke[0]);
                 intent.putExtra(DisplayJokeActivity.EXTRA_JOKE_ANSWER, joke[1]);
                 startActivityForResult(intent, REQUEST_CODE_DISPLAY_JOKE_ACITVITY);
@@ -52,5 +60,22 @@ public class MainActivityFragment extends Fragment {
             mAdView.loadAd(adRequest);
         }
         return root;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        presenter.closeAllAsyncTasks();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        presenter.loadAllJokes(new GetJokesFromFirebaseAsyncTask.GetAllJokesCallback() {
+            @Override
+            public void updateUI(ArrayList<String[]> arrayList) {
+                jokes.setJokes(arrayList);
+            }
+        });
     }
 }
